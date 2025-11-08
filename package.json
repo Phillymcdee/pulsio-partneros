@@ -1,0 +1,63 @@
+{
+  "name": "pulsio-partneros",
+  "version": "1.0.0",
+  "description": "This folder gives Cursor’s agent rich context to build the MVP.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Phillymcdee/pulsio-partneros.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Phillymcdee/pulsio-partneros/issues"
+  },
+  "homepage": "https://github.com/Phillymcdee/pulsio-partneros#readme",
+  "dependencies": {
+    "@auth/core": "^0.34.3",
+    "@auth/drizzle-adapter": "^1.11.1",
+    "@neondatabase/serverless": "^1.0.2",
+    "@paralleldrive/cuid2": "^3.0.4",
+    "@playwright/test": "^1.56.1",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitest/ui": "^4.0.8",
+    "autoprefixer": "^10.4.21",
+    "crypto": "^1.0.1",
+    "drizzle-kit": "^0.31.6",
+    "drizzle-orm": "^0.44.7",
+    "feedparser": "^2.2.10",
+    "inngest": "^3.45.0",
+    "next": "^16.0.1",
+    "next-auth": "^5.0.0-beta.30",
+    "node-html-parser": "^7.0.1",
+    "nodemailer": "^7.0.10",
+    "openai": "^6.8.1",
+    "playwright": "^1.56.1",
+    "postcss": "^8.5.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "resend": "^6.4.2",
+    "rss-parser": "^3.13.0",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8",
+    "zod": "^4.1.12"
+  }
+}
