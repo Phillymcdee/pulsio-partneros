@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { generateDigest } from '../lib/digest';
+import { generateDigest } from '../digest';
 
 describe('digest', () => {
   describe('generateDigest', () => {

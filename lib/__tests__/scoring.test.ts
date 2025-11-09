@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateBaseScore, finalScore, getRecencyMultiplier } from '../lib/scoring';
-import type { objectives } from '../lib/schema';
+import { calculateBaseScore, finalScore, getRecencyMultiplier } from '../scoring';
+import type { objectives } from '../schema';
 
 type Objective = typeof objectives.$inferSelect;
 

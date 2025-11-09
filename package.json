@@ -59,5 +59,8 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.8",
     "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3"
   }
 }

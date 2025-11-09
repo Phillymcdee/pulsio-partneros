@@ -1,13 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { detectRssUrl, validateFeedUrl, generateDedupeHash, fetchFeed } from '../lib/rss';
 import Parser from 'rss-parser';
 
-vi.mock('rss-parser');
-vi.mock('node-html-parser');
+// Mock rss-parser before importing rss module
+vi.mock('rss-parser', () => {
+  return {
+    default: vi.fn().mockImplementation(() => ({
+      parseURL: vi.fn(),
+    })),
+  };
+});
+
+vi.mock('node-html-parser', () => ({
+  parse: vi.fn(() => ({
+    querySelectorAll: vi.fn(() => []),
+  })),
+}));
+
+import { detectRssUrl, validateFeedUrl, generateDedupeHash, fetchFeed } from '../rss';
 
 describe('rss', () => {
+  let mockParser: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockParser = new Parser();
   });
 
   describe('generateDedupeHash', () => {
@@ -26,25 +42,17 @@ describe('rss', () => {
 
   describe('validateFeedUrl', () => {
     it('should return true for valid RSS feed', async () => {
-      const mockParser = {
-        parseURL: vi.fn().mockResolvedValue({
-          title: 'Test Feed',
-          items: [{ title: 'Item 1' }],
-        }),
-      };
-
-      vi.mocked(Parser).mockImplementation(() => mockParser as any);
+      mockParser.parseURL.mockResolvedValue({
+        title: 'Test Feed',
+        items: [{ title: 'Item 1' }],
+      });
 
       const result = await validateFeedUrl('https://example.com/feed');
       expect(result).toBe(true);
     });
 
     it('should return false for invalid feed', async () => {
-      const mockParser = {
-        parseURL: vi.fn().mockRejectedValue(new Error('Invalid feed')),
-      };
-
-      vi.mocked(Parser).mockImplementation(() => mockParser as any);
+      mockParser.parseURL.mockRejectedValue(new Error('Invalid feed'));
 
       const result = await validateFeedUrl('https://example.com/invalid');
       expect(result).toBe(false);
@@ -66,11 +74,7 @@ describe('rss', () => {
         ],
       };
 
-      const mockParser = {
-        parseURL: vi.fn().mockResolvedValue(mockFeed),
-      };
-
-      vi.mocked(Parser).mockImplementation(() => mockParser as any);
+      mockParser.parseURL.mockResolvedValue(mockFeed);
 
       const result = await fetchFeed('https://example.com/feed');
       expect(result).not.toBeNull();
@@ -80,11 +84,7 @@ describe('rss', () => {
     });
 
     it('should return null on error', async () => {
-      const mockParser = {
-        parseURL: vi.fn().mockRejectedValue(new Error('Fetch error')),
-      };
-
-      vi.mocked(Parser).mockImplementation(() => mockParser as any);
+      mockParser.parseURL.mockRejectedValue(new Error('Fetch error'));
 
       const result = await fetchFeed('https://example.com/feed');
       expect(result).toBeNull();
