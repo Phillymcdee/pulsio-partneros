@@ -41,6 +41,8 @@ export default function PartnerPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deeperPlayLoading, setDeeperPlayLoading] = useState(false);
+  const [deeperPlayDraft, setDeeperPlayDraft] = useState<{ outreachDraft: string; suggestedPlay: string } | null>(null);
 
   useEffect(() => {
     if (partnerId) {
@@ -88,6 +90,32 @@ export default function PartnerPage() {
     }
   };
 
+  const handleDeeperPlay = async () => {
+    setDeeperPlayLoading(true);
+    try {
+      const response = await fetch(`/api/partners/${partnerId}/deeper-play`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDeeperPlayDraft(data);
+      } else {
+        alert('Failed to generate deeper play draft. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating deeper play draft:', error);
+      alert('Failed to generate deeper play draft. Please try again.');
+    } finally {
+      setDeeperPlayLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Copied to clipboard!');
+  };
+
   if (loading) {
     return <div className="p-8">Loading...</div>;
   }
@@ -117,7 +145,40 @@ export default function PartnerPage() {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Insights</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Insights</h2>
+            <button
+              onClick={handleDeeperPlay}
+              disabled={deeperPlayLoading}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deeperPlayLoading ? 'Generating...' : '🎯 Nudge Deeper Play'}
+            </button>
+          </div>
+
+          {deeperPlayDraft && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Suggested Deeper Play</h3>
+                  <p className="text-purple-700 mb-4">{deeperPlayDraft.suggestedPlay}</p>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(deeperPlayDraft.outreachDraft)}
+                  className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                >
+                  Copy Draft
+                </button>
+              </div>
+              <div className="bg-white p-4 rounded border border-purple-200">
+                <p className="text-sm font-medium text-gray-700 mb-2">Outreach Draft:</p>
+                <div className="font-mono text-sm whitespace-pre-wrap text-gray-800">
+                  {deeperPlayDraft.outreachDraft}
+                </div>
+              </div>
+            </div>
+          )}
+
           {insights.length === 0 ? (
             <div className="bg-white rounded shadow p-6 text-center text-gray-500">
               No insights yet. Signals will be processed automatically.

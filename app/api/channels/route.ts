@@ -3,9 +3,15 @@ import { db } from '@/lib/db';
 import { channels, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { rateLimit, validateInput, validationSchemas } from '@/lib/middleware/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit()(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const user = await getCurrentUser();
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -33,28 +39,35 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(userChannel[0]);
   } catch (error) {
-    console.error('Error fetching channel:', error);
+    logger.error('Error fetching channel', error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit({ maxRequests: 20 })(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const user = await getCurrentUser();
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    // Validate input
+    const validationResult = await validateInput(validationSchemas.channel)(request);
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
+    }
+    const { emailEnabled, slackWebhookUrl, cadence } = validationResult.data;
+    
     const updates: Partial<typeof channels.$inferInsert> = {};
     
-    if (body.emailEnabled !== undefined) updates.emailEnabled = body.emailEnabled;
-    if (body.slackWebhookUrl !== undefined) updates.slackWebhookUrl = body.slackWebhookUrl;
-    if (body.cadence !== undefined) {
-      if (!['daily', 'weekly'].includes(body.cadence)) {
-        return NextResponse.json({ error: 'Cadence must be daily or weekly' }, { status: 400 });
-      }
-      updates.cadence = body.cadence;
+    if (emailEnabled !== undefined) updates.emailEnabled = emailEnabled;
+    if (slackWebhookUrl !== undefined) updates.slackWebhookUrl = slackWebhookUrl || null;
+    if (cadence !== undefined) {
+      updates.cadence = cadence;
     }
     
     updates.updatedAt = new Date();
@@ -67,27 +80,33 @@ export async function PATCH(request: NextRequest) {
       .limit(1);
 
     let updated;
+    const updateData: Partial<typeof channels.$inferInsert> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
     if (userChannel.length === 0) {
       // Create new channel
       [updated] = await db
         .insert(channels)
         .values({
           userId: user.id,
-          ...updates,
+          ...updateData,
         })
         .returning();
     } else {
       // Update existing
       [updated] = await db
         .update(channels)
-        .set(updates)
+        .set(updateData)
         .where(eq(channels.userId, user.id))
         .returning();
     }
 
+    logger.info('Channel updated', { userId: user.id });
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error updating channel:', error);
+    logger.error('Error updating channel', error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

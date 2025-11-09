@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { isOnboardingComplete, markOnboardingComplete } from '@/lib/onboarding';
 import { inngest } from '@/lib/inngest';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (stricter for onboarding completion)
+    const rateLimitResponse = await rateLimit({ maxRequests: 5, windowMs: 5 * 60 * 1000 })(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const user = await getCurrentUser();
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,9 +43,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    logger.info('Onboarding completed', { userId: user.id });
     return NextResponse.json({ success: true, message: 'Onboarding completed successfully' });
   } catch (error) {
-    console.error('Error completing onboarding:', error);
+    logger.error('Error completing onboarding', error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

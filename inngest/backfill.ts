@@ -6,6 +6,7 @@ import { fetchFeed, generateDedupeHash } from '@/lib/rss';
 import { classifyType } from '@/lib/classify';
 import { summarize } from '@/lib/summarize';
 import { generateInsight } from '@/lib/insights';
+import { logger } from '@/lib/logger';
 
 export const partnerBackfill = inngest.createFunction(
   { id: 'partner-backfill' },
@@ -131,7 +132,7 @@ export const partnerBackfill = inngest.createFunction(
             newSignals: newSignalsCount,
           });
         } catch (error) {
-          console.error(`Error backfilling partner ${partner.id}:`, error);
+          logger.error(`Error backfilling partner ${partner.id}`, error as Error);
           results.push({
             partnerId: partner.id,
             status: 'error',

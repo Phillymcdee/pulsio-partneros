@@ -16,7 +16,7 @@ const SIGNAL_TYPE_WEIGHTS: Record<SignalType, number> = {
 };
 
 // Recency decay multipliers
-function getRecencyMultiplier(publishedAt: Date | null): number {
+export function getRecencyMultiplier(publishedAt: Date | null): number {
   if (!publishedAt) return 0.5; // No date = lower score
 
   const now = new Date();

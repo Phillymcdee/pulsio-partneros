@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { insights, signals, partners, objectives } from '@/lib/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, gte } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userInsights = await db
+    const { searchParams } = new URL(request.url);
+    const hotSignals = searchParams.get('hot') === 'true';
+    const statusFilter = searchParams.get('status');
+    const minScore = hotSignals ? 80 : undefined;
+
+    // Build where conditions
+    const conditions = [eq(partners.userId, user.id)];
+    if (minScore !== undefined) {
+      conditions.push(gte(insights.score, minScore));
+    }
+    if (statusFilter) {
+      conditions.push(eq(insights.status, statusFilter as any));
+    }
+
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    // Build query
+    let query = db
       .select({
         insight: insights,
         signal: signals,
@@ -22,9 +40,17 @@ export async function GET(request: NextRequest) {
       .innerJoin(signals, eq(insights.signalId, signals.id))
       .innerJoin(partners, eq(signals.partnerId, partners.id))
       .leftJoin(objectives, eq(insights.objectiveId, objectives.id))
-      .where(eq(partners.userId, user.id))
-      .orderBy(desc(insights.score))
-      .limit(50);
+      .where(whereClause);
+
+    // For hot signals, sort by recency first (most recent), then by score
+    // Otherwise, sort by score descending
+    if (hotSignals) {
+      query = query.orderBy(desc(insights.createdAt), desc(insights.score));
+    } else {
+      query = query.orderBy(desc(insights.score));
+    }
+
+    const userInsights = await query.limit(50);
 
     const formatted = userInsights.map((item) => ({
       id: item.insight.id,
@@ -35,6 +61,8 @@ export async function GET(request: NextRequest) {
       actions: item.insight.actions,
       outreachDraft: item.insight.outreachDraft,
       feedback: item.insight.feedback,
+      status: item.insight.status || 'pending',
+      createdAt: item.insight.createdAt,
       signal: {
         id: item.signal.id,
         title: item.signal.title,
@@ -54,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formatted);
   } catch (error) {
-    console.error('Error fetching insights:', error);
+    logger.error('Error fetching insights', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

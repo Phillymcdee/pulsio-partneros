@@ -78,37 +78,54 @@ export async function detectRssUrl(domain: string): Promise<string | null> {
 }
 
 /**
- * Validates if a URL is a valid RSS/Atom feed
+ * Validates if a URL is a valid RSS/Atom feed with retry logic
  */
-export async function validateFeedUrl(url: string): Promise<boolean> {
-  try {
-    const feed = await parser.parseURL(url);
-    return feed && feed.items && feed.items.length > 0;
-  } catch (error) {
-    return false;
+export async function validateFeedUrl(url: string, maxRetries: number = 2): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const feed = await parser.parseURL(url);
+      return feed && feed.items && feed.items.length > 0;
+    } catch (error) {
+      if (attempt < maxRetries) {
+        // Short delay for validation retries
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
   }
+  return false;
 }
 
 /**
- * Fetches and parses an RSS feed
+ * Fetches and parses an RSS feed with retry logic
  */
-export async function fetchFeed(url: string): Promise<ParsedFeed | null> {
-  try {
-    const feed = await parser.parseURL(url);
-    return {
-      title: feed.title || '',
-      items: feed.items.map((item) => ({
-        title: item.title || '',
-        link: item.link || '',
-        pubDate: item.pubDate,
-        content: item.content,
-        contentSnippet: item.contentSnippet,
-      })),
-    };
-  } catch (error) {
-    console.error('Failed to fetch feed:', error);
-    return null;
+export async function fetchFeed(url: string, maxRetries: number = 3): Promise<ParsedFeed | null> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const feed = await parser.parseURL(url);
+      return {
+        title: feed.title || '',
+        items: feed.items.map((item) => ({
+          title: item.title || '',
+          link: item.link || '',
+          pubDate: item.pubDate,
+          content: item.content,
+          contentSnippet: item.contentSnippet,
+        })),
+      };
+    } catch (error) {
+      lastError = error as Error;
+      // Exponential backoff: wait 1s, 2s, 4s
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
+  
+  console.error(`Failed to fetch feed after ${maxRetries} attempts:`, lastError);
+  return null;
 }
 
 /**

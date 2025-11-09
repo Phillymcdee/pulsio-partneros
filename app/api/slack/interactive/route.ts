@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { insights, signals, partners, channels, users, objectives } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
+import { verifySlackSignature } from '@/lib/slack/verify';
+import { logger } from '@/lib/logger';
+import { processFeedback } from '@/lib/feedback';
 
 /**
  * Handle Slack interactive components (button clicks)
@@ -12,6 +15,11 @@ import { eq, and } from 'drizzle-orm';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Clone request to read body twice (once for signature, once for parsing)
+    const clonedRequest = request.clone();
+    const rawBody = await clonedRequest.text();
+    
+    // Parse form data from original request
     const body = await request.formData();
     const payload = body.get('payload');
     
@@ -20,6 +28,18 @@ export async function POST(request: NextRequest) {
     }
 
     const payloadData = JSON.parse(payload as string);
+    
+    // Skip signature verification for URL verification (Slack's initial setup)
+    if (payloadData.type !== 'url_verification') {
+      const isValid = verifySlackSignature(request, rawBody);
+      if (!isValid) {
+        logger.warn('Invalid Slack signature', { 
+          timestamp: request.headers.get('x-slack-request-timestamp'),
+          signature: request.headers.get('x-slack-signature'),
+        });
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
+    }
     
     // Handle URL verification (Slack sends this on initial setup)
     if (payloadData.type === 'url_verification') {
@@ -61,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Unsupported action type' }, { status: 400 });
   } catch (error) {
-    console.error('Error handling Slack interaction:', error);
+    logger.error('Error handling Slack interaction', error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -111,7 +131,7 @@ async function handleSlackFeedback(
 
     const userId = insightResult[0].partner.userId;
     
-    // Process feedback (reuse logic from feedback route)
+    // Process feedback (reuse shared logic)
     await processFeedback(insightId, type, userId);
 
     // Send confirmation to Slack
@@ -121,7 +141,7 @@ async function handleSlackFeedback(
       replace_original: false,
     });
   } catch (error) {
-    console.error('Error processing Slack feedback:', error);
+    logger.error('Error processing Slack feedback', error as Error, { insightId, type });
     await sendSlackResponse(responseUrl, {
       text: 'Error processing feedback. Please try again.',
       replace_original: false,
@@ -178,79 +198,11 @@ async function handleSlackCopy(
       replace_original: false,
     });
   } catch (error) {
-    console.error('Error copying draft:', error);
+    logger.error('Error copying draft', error as Error, { insightId });
     await sendSlackResponse(responseUrl, {
       text: 'Error retrieving draft. Please try again.',
       replace_original: false,
     });
-  }
-}
-
-/**
- * Process feedback (shared logic)
- * Duplicated from feedback route - in production, extract to shared module
- */
-async function processFeedback(insightId: string, type: string, userId: string): Promise<void> {
-  // Verify insight belongs to user
-  const insightResult = await db
-    .select({
-      insight: insights,
-      signal: signals,
-      partner: partners,
-    })
-    .from(insights)
-    .innerJoin(signals, eq(insights.signalId, signals.id))
-    .innerJoin(partners, eq(signals.partnerId, partners.id))
-    .where(and(eq(insights.id, insightId), eq(partners.userId, userId)))
-    .limit(1);
-
-  if (insightResult.length === 0) {
-    throw new Error('Insight not found');
-  }
-
-  // Update insight feedback
-  await db
-    .update(insights)
-    .set({ feedback: type })
-    .where(eq(insights.id, insightId));
-
-  // Update user preferences based on feedback
-  const userRecord = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (userRecord.length > 0) {
-    const preferences = userRecord[0].preferences || {
-      signalTypeWeights: {},
-      objectiveTypeWeights: {},
-      sourceWeights: {},
-    };
-
-    const signalType = insightResult[0].signal.type;
-    const objectiveType = insightResult[0].insight.objectiveId ? 
-      (await db.select().from(objectives).where(eq(objectives.id, insightResult[0].insight.objectiveId!)).limit(1))[0]?.type : null;
-
-    // Adjust weights
-    const adjustment = type === 'thumbs_up' ? 0.1 : type === 'thumbs_down' ? -0.1 : -0.15;
-
-    if (signalType) {
-      preferences.signalTypeWeights = preferences.signalTypeWeights || {};
-      const currentWeight = preferences.signalTypeWeights[signalType] || 1.0;
-      preferences.signalTypeWeights[signalType] = Math.max(0.5, Math.min(2.0, currentWeight + adjustment));
-    }
-
-    if (objectiveType) {
-      preferences.objectiveTypeWeights = preferences.objectiveTypeWeights || {};
-      const currentWeight = preferences.objectiveTypeWeights[objectiveType] || 1.0;
-      preferences.objectiveTypeWeights[objectiveType] = Math.max(0.5, Math.min(2.0, currentWeight + adjustment));
-    }
-
-    await db
-      .update(users)
-      .set({ preferences })
-      .where(eq(users.id, userId));
   }
 }
 

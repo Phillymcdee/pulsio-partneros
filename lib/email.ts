@@ -39,7 +39,7 @@ function generateEmailHtml(items: DigestItem[]): string {
     .recommendation { background: #f3f4f6; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
     .action { font-weight: 600; color: #059669; margin-bottom: 12px; }
     .outreach-draft { background: #f9fafb; border-left: 3px solid #3b82f6; padding: 12px; margin-bottom: 12px; font-family: monospace; font-size: 14px; white-space: pre-wrap; }
-    .buttons { display: flex; gap: 8px; margin-top: 16px; }
+    .buttons { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
     .button { display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; }
     .button-primary { background: #3b82f6; color: white; }
     .button-secondary { background: #e5e7eb; color: #374151; }
@@ -64,10 +64,10 @@ function generateEmailHtml(items: DigestItem[]): string {
         <div class="action">Recommended Action: ${item.action}</div>
         <div class="outreach-draft">${item.outreachDraft}</div>
         <div class="buttons">
-          <a href="${baseUrl}/api/insights/${item.insightId}/copy" class="button button-primary">📋 Copy Draft</a>
-          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_up" class="button button-secondary">👍 Useful</a>
-          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_down" class="button button-secondary">👎 Not Useful</a>
-          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=na" class="button button-secondary">Mark N/A</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/copy" class="button button-primary" target="_blank">📋 Copy Draft</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_up" class="button button-secondary" target="_blank">👍 Useful</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_down" class="button button-secondary" target="_blank">👎 Not Useful</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=na" class="button button-secondary" target="_blank">Mark N/A</a>
         </div>
       </div>
     `).join('')}

@@ -23,6 +23,8 @@ export const signalTypeEnum = pgEnum('signal_type', [
 
 export const cadenceEnum = pgEnum('cadence', ['daily', 'weekly']);
 
+export const insightStatusEnum = pgEnum('insight_status', ['pending', 'ready_to_send', 'approved', 'sent']);
+
 // Users table (NextAuth compatible)
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -136,6 +138,7 @@ export const insights = pgTable('insights', {
   }>>().notNull(),
   outreachDraft: text('outreach_draft').notNull(),
   feedback: text('feedback').$type<'thumbs_up' | 'thumbs_down' | 'na'>(),
+  status: insightStatusEnum('status').default('pending'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
