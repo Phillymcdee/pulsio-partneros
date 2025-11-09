@@ -64,7 +64,8 @@ function generateEmailHtml(items: DigestItem[]): string {
         <div class="action">Recommended Action: ${item.action}</div>
         <div class="outreach-draft">${item.outreachDraft}</div>
         <div class="buttons">
-          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_up" class="button button-primary">👍 Useful</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/copy" class="button button-primary">📋 Copy Draft</a>
+          <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_up" class="button button-secondary">👍 Useful</a>
           <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=thumbs_down" class="button button-secondary">👎 Not Useful</a>
           <a href="${baseUrl}/api/insights/${item.insightId}/feedback?type=na" class="button button-secondary">Mark N/A</a>
         </div>
