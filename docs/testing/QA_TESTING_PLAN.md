@@ -237,7 +237,7 @@ npm run test:ui
 
 ## Known Issues & Limitations
 
-### From IMPLEMENTATION_STATUS.md
+### From docs/implementation/IMPLEMENTATION_STATUS.md
 - ✅ All known issues resolved
 - Consider Redis for rate limiting at scale (optional)
 - Add full Sentry SDK integration (scaffolded)

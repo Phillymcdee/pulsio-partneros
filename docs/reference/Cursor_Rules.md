@@ -3,27 +3,27 @@
 ## Documentation Structure
 
 **Core docs** (read first):
-- `ICP.md` — Ideal Customer Profile & personas
-- `Problem_JTBD.md` — Problems, Jobs-to-be-Done, outcomes
-- `UX.md` — End-to-end user experience (flows, journeys)
-- `Architecture.md` — Tech stack & repo layout
-- `DataModel.md` — Entities & tables
-- `Workflows.md` — Ingestion, scoring, digest (backend jobs)
-- `Prompts.md` — LLM prompts & response formats
-- `Metrics_Success.md` — KPIs, acceptance criteria
-- `Pricing_Packaging.md` — Plans & offers
-- `Roadmap.md` — 10-day build, next phases
-- `Risks_Guardrails.md` — Pre-mortem & safeguards
+- `docs/business/ICP.md` — Ideal Customer Profile & personas
+- `docs/business/Problem_JTBD.md` — Problems, Jobs-to-be-Done, outcomes
+- `docs/business/UX.md` — End-to-end user experience (flows, journeys)
+- `docs/architecture/Architecture.md` — Tech stack & repo layout
+- `docs/architecture/DataModel.md` — Entities & tables
+- `docs/architecture/Workflows.md` — Ingestion, scoring, digest (backend jobs)
+- `docs/reference/Prompts.md` — LLM prompts & response formats
+- `docs/business/Metrics_Success.md` — KPIs, acceptance criteria
+- `docs/business/Pricing_Packaging.md` — Plans & offers
+- `docs/implementation/Roadmap.md` — 10-day build, next phases
+- `docs/business/Risks_Guardrails.md` — Pre-mortem & safeguards
 
 **Flow & Implementation docs**:
-- `USER_FLOWS.md` — **Maps UX flows to implementation tasks** (read before implementing features)
-- `Implementation_Decisions.md` — Technical decisions & rationale
-- `IMPLEMENTATION_STATUS.md` — What's done, what's remaining
-- `FLOW_TEMPLATE.md` — Template for documenting new flows
+- `docs/implementation/USER_FLOWS.md` — **Maps UX flows to implementation tasks** (read before implementing features)
+- `docs/implementation/Implementation_Decisions.md` — Technical decisions & rationale
+- `docs/implementation/IMPLEMENTATION_STATUS.md` — What's done, what's remaining
+- `docs/implementation/FLOW_TEMPLATE.md` — Template for documenting new flows
 
 **Dev helpers**:
-- `API_Contracts.md` — Internal function shapes / API stubs
-- `Sample_Data.md` — Seed examples for dev & demos
+- `docs/reference/API_Contracts.md` — Internal function shapes / API stubs
+- `docs/reference/Sample_Data.md` — Seed examples for dev & demos
 
 ## Implementation Process (Flow-First Approach)
 
@@ -31,10 +31,10 @@
 
 **Always start with UX flows:**
 
-1. **Read `UX.md`** to understand the user journey
-2. **Check `USER_FLOWS.md`** for flow → task mappings
-3. **Review `Roadmap.md`** to see where it fits in the timeline
-4. **Check `IMPLEMENTATION_STATUS.md`** to see what's already done
+1. **Read `docs/business/UX.md`** to understand the user journey
+2. **Check `docs/implementation/USER_FLOWS.md`** for flow → task mappings
+3. **Review `docs/implementation/Roadmap.md`** to see where it fits in the timeline
+4. **Check `docs/implementation/IMPLEMENTATION_STATUS.md`** to see what's already done
 
 ### 2. For Each UX Flow, Ensure:
 
@@ -47,14 +47,14 @@
 
 When implementing a feature or flow:
 
-- [ ] Read the relevant UX flow in `UX.md`
-- [ ] Check `USER_FLOWS.md` for existing task breakdown
-- [ ] If flow doesn't exist in `USER_FLOWS.md`, create it using `FLOW_TEMPLATE.md`
+- [ ] Read the relevant UX flow in `docs/business/UX.md`
+- [ ] Check `docs/implementation/USER_FLOWS.md` for existing task breakdown
+- [ ] If flow doesn't exist in `docs/implementation/USER_FLOWS.md`, create it using `docs/implementation/FLOW_TEMPLATE.md`
 - [ ] Break down into concrete tasks with file paths
-- [ ] Add tasks to `Roadmap.md` if not already there
+- [ ] Add tasks to `docs/implementation/Roadmap.md` if not already there
 - [ ] Implement features + orchestration together (not separately)
-- [ ] Update `IMPLEMENTATION_STATUS.md` as you complete tasks
-- [ ] Verify against `UX.md` acceptance criteria
+- [ ] Update `docs/implementation/IMPLEMENTATION_STATUS.md` as you complete tasks
+- [ ] Verify against `docs/business/UX.md` acceptance criteria
 - [ ] Write tests (unit, integration, E2E as specified in flow)
 
 ### 4. Code Organization
@@ -137,10 +137,10 @@ try {
 
 ### 10. When Adding New Features
 
-1. **Check if it's part of an existing flow** in `USER_FLOWS.md`
-2. **If new flow**, document it in `USER_FLOWS.md` using the template
-3. **Update `Roadmap.md`** with timeline
-4. **Update `IMPLEMENTATION_STATUS.md`** as you progress
+1. **Check if it's part of an existing flow** in `docs/implementation/USER_FLOWS.md`
+2. **If new flow**, document it in `docs/implementation/USER_FLOWS.md` using the template
+3. **Update `docs/implementation/Roadmap.md`** with timeline
+4. **Update `docs/implementation/IMPLEMENTATION_STATUS.md`** as you progress
 5. **Follow the implementation checklist above**
 
 ### 11. Key Principles
@@ -158,7 +158,7 @@ try {
 - ❌ Building features without checking UX flows
 - ❌ Missing orchestration logic (detection, completion, routing)
 - ❌ Forgetting tenant isolation in queries
-- ❌ Not updating `USER_FLOWS.md` when adding flows
+- ❌ Not updating `docs/implementation/USER_FLOWS.md` when adding flows
 - ❌ Implementing features separately without connecting them
 - ❌ Skipping tests for critical paths
 

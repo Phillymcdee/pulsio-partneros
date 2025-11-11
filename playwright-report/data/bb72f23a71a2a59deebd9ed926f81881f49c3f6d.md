@@ -1,0 +1,41 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: "1"
+        - generic [ref=e9]: Add Partners
+      - generic [ref=e11]:
+        - generic [ref=e12]: "2"
+        - generic [ref=e13]: Set Objectives
+      - generic [ref=e15]:
+        - generic [ref=e16]: "3"
+        - generic [ref=e17]: Configure Delivery
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - heading "Add Your Partners" [level=2] [ref=e24]
+        - paragraph [ref=e25]: Add at least one partner to get started. We'll automatically detect RSS feeds when you provide a domain.
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Partner Name *
+            - textbox "e.g., Stripe" [ref=e29]
+          - generic [ref=e30]:
+            - generic [ref=e31]: Domain
+            - textbox "stripe.com" [ref=e32]
+            - paragraph [ref=e33]: We'll try to auto-detect RSS feed
+          - generic [ref=e34]:
+            - generic [ref=e35]: RSS URL (optional)
+            - textbox "https://stripe.com/blog/feed" [ref=e36]
+          - button "Add Partner" [ref=e37]
+        - link "Or import partners from CSV →" [ref=e39] [cursor=pointer]:
+          - /url: /partners/import
+        - paragraph [ref=e40]: Please add at least one partner to continue.
+      - generic [ref=e41]:
+        - button "Back" [disabled] [ref=e42]
+        - button "Next" [disabled] [ref=e43]
+  - button "Open Next.js Dev Tools" [ref=e49] [cursor=pointer]:
+    - img [ref=e50]
+  - alert [ref=e53]
+```

@@ -1,11 +1,11 @@
 # Flow Template
 
-Use this template when documenting a new user flow from `UX.md`.
+Use this template when documenting a new user flow from `docs/business/UX.md`.
 
 ---
 
 ## Flow: [Flow Name]
-**Source**: UX.md [section name]  
+**Source**: docs/business/UX.md [section name]  
 **User Goal**: [What is the user trying to accomplish?]
 
 ### User Journey
@@ -66,7 +66,7 @@ Use this template when documenting a new user flow from `UX.md`.
 
 ```markdown
 ## Flow: First Run (≤5 min)
-**Source**: UX.md "First run" section  
+**Source**: docs/business/UX.md "First run" section  
 **User Goal**: Get set up and receive first Partner Pulse in ≤5 minutes
 
 ### User Journey
@@ -94,7 +94,7 @@ Use this template when documenting a new user flow from `UX.md`.
 
 When documenting a new flow:
 
-1. [ ] Read the UX flow in `UX.md`
+1. [ ] Read the UX flow in `docs/business/UX.md`
 2. [ ] Understand the user goal and context
 3. [ ] Break down into implementation tasks
 4. [ ] Identify detection logic (when does flow trigger?)
@@ -103,7 +103,7 @@ When documenting a new flow:
 7. [ ] Identify integration points (how does it connect?)
 8. [ ] Write acceptance criteria (measurable, testable)
 9. [ ] Define testing requirements
-10. [ ] Add to `USER_FLOWS.md`
-11. [ ] Update `Roadmap.md` with timeline
-12. [ ] Update `IMPLEMENTATION_STATUS.md` with tasks
+10. [ ] Add to `docs/implementation/USER_FLOWS.md`
+11. [ ] Update `docs/implementation/Roadmap.md` with timeline
+12. [ ] Update `docs/implementation/IMPLEMENTATION_STATUS.md` with tasks
 

@@ -8,7 +8,7 @@
 - ✅ Drizzle ORM schema created with all tables:
   - users, partners, objectives, watchlist, signals, insights, channels
 - ✅ NextAuth configured with email magic links
-- ✅ Project structure set up per Architecture.md
+- ✅ Project structure set up per docs/architecture/Architecture.md
 - ✅ Configuration files (tsconfig, next.config, tailwind, etc.)
 
 ### Day 3-4: Partner Management & RSS Ingestion
@@ -120,7 +120,7 @@
 ## 📋 Remaining Tasks
 
 ### User Flows (Orchestration Layer)
-See `USER_FLOWS.md` for detailed flow breakdowns.
+See `docs/implementation/USER_FLOWS.md` for detailed flow breakdowns.
 
 #### First Run Flow
 - ✅ Onboarding detection logic (`lib/onboarding.ts`) - **COMPLETE**
@@ -245,10 +245,13 @@ See `USER_FLOWS.md` for detailed flow breakdowns.
 - All core functionality is implemented according to the plan
 - **Phase 1 (First Run Onboarding Flow) is COMPLETE** ✅
 - **Slack interactive components are COMPLETE** ✅
-- Unit tests are scaffolded but may need refinement based on actual implementation
-- Integration and E2E tests need to be written
-- Performance monitoring needs to be implemented
+- **Weekly Rhythm Flow features are COMPLETE** ✅
+- **Unit tests: 31/31 passing** ✅
+- **Integration tests: 13/14 passing** ✅ (1 timeout expected due to OpenAI API quota)
+- **E2E tests: Implemented and ready to run** ✅
+- Performance monitoring needs to be implemented (Phase 2)
 - QA checkpoints should be executed before production deployment
+- Two code TODOs remain (Sentry integration, Slack team_id mapping)
 
 ## 📅 Update History
 
@@ -306,8 +309,28 @@ See `USER_FLOWS.md` for detailed flow breakdowns.
   - ⚠️ One integration test timeout due to OpenAI API quota (expected)
   - **Status**: Ready for QA (97% pass rate, 44/45 tests passing)
 
+- **2025-01-09 EST**: Planning files updated
+  - ✅ Updated docs/implementation/USER_FLOWS.md to mark Phase 1 items as complete
+  - ✅ Updated docs/implementation/IMPLEMENTATION_STATUS.md with code TODOs and current status
+  - ✅ Updated docs/implementation/Roadmap.md to reflect MVP completion
+  - ✅ Removed redundant documentation files (SETUP_COMPLETE.md, partneros-mvp-implementation-plan.plan.md)
+  - ✅ Created GETTING_STARTED.md with comprehensive setup guide
+  - ✅ Created .env.example with all environment variables documented
+  - ✅ Updated README.md to reference GETTING_STARTED.md
+  - ✅ All planning files now accurately reflect current implementation state
+
 ## 🔧 Known Issues / TODOs
 
+### Code TODOs
+- [ ] **ErrorBoundary.tsx (line 28)**: Send errors to Sentry or other error tracking service
+  - Currently just logs to console in production
+  - Sentry integration scaffolded but needs full SDK integration (`@sentry/nextjs` package)
+  
+- [ ] **Slack Interactive Route (line 63)**: Add `team_id` to channels table for proper Slack user mapping
+  - Currently uses workaround for MVP (finds user via partner relationship)
+  - Needed for proper multi-user Slack support
+
+### Completed Items
 - ✅ Fix test imports (getRecencyMultiplier export) - **COMPLETE**
 - ✅ Add error boundaries to React components - **COMPLETE**
 - ✅ Add loading states to all async operations - **COMPLETE**
@@ -315,6 +338,8 @@ See `USER_FLOWS.md` for detailed flow breakdowns.
 - ✅ Complete email action links (copy, feedback) for digest emails - **COMPLETE**
 - ✅ Add E2E tests with Playwright for critical user flows - **COMPLETE**
 - ✅ Add integration tests for critical paths - **COMPLETE**
+
+### Optional Enhancements
 - Consider Redis for rate limiting at scale (currently in-memory) - Optional enhancement
 - Add full Sentry SDK integration (currently scaffolded, requires @sentry/nextjs package)
 
