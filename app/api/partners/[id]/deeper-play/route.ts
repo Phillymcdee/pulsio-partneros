@@ -23,9 +23,10 @@ export async function POST(
     }
 
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, { maxRequests: 10, windowMs: 60000 });
-    if (!rateLimitResult.success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    const rateLimitFn = rateLimit({ maxRequests: 10, windowMs: 60000 });
+    const rateLimitResult = await rateLimitFn(request);
+    if (rateLimitResult) {
+      return rateLimitResult; // Rate limit exceeded
     }
 
     // Verify partner belongs to user
@@ -106,7 +107,7 @@ Return JSON with:
         suggestedPlay: parsed.suggestedPlay || 'Explore deeper partnership opportunities',
       });
     } catch (error) {
-      logger.error('Error generating deeper play draft', { error, partnerId: id });
+      logger.error('Error generating deeper play draft', error instanceof Error ? error : new Error(String(error)), { partnerId: id });
       // Fallback to default draft
       return NextResponse.json({
         outreachDraft: generateDefaultDeeperPlayDraft(partnerData.name),
@@ -114,7 +115,7 @@ Return JSON with:
       });
     }
   } catch (error) {
-    logger.error('Error in deeper play route', { error, partnerId: (await params).id });
+    logger.error('Error in deeper play route', error instanceof Error ? error : new Error(String(error)), { partnerId: (await params).id });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

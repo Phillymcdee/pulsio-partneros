@@ -38,6 +38,7 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [message, setMessage] = useState('');
 
   // Step 1: Partners
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -101,19 +102,33 @@ export default function OnboardingPage() {
   const handleAddPartner = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setMessage('');
     try {
+      // Clean up empty strings to undefined
+      const payload = {
+        name: partnerFormData.name,
+        ...(partnerFormData.domain && { domain: partnerFormData.domain }),
+        ...(partnerFormData.rssUrl && { rssUrl: partnerFormData.rssUrl }),
+      };
+
       const response = await fetch('/api/partners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(partnerFormData),
+        body: JSON.stringify(payload),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         await fetchData();
         setPartnerFormData({ name: '', domain: '', rssUrl: '' });
+        setMessage('');
+      } else {
+        setMessage(data.error || data.details || 'Failed to add partner. Please try again.');
       }
     } catch (error) {
       console.error('Error creating partner:', error);
+      setMessage('Error creating partner. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -284,6 +299,11 @@ export default function OnboardingPage() {
                 >
                   {loading ? 'Adding...' : 'Add Partner'}
                 </button>
+                {message && (
+                  <div className={`mt-2 p-2 rounded text-sm ${message.includes('Error') || message.includes('Failed') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                    {message}
+                  </div>
+                )}
               </form>
 
               <div className="mb-4">

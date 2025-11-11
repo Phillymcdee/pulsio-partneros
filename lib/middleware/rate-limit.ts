@@ -108,7 +108,7 @@ export function validateInput<T>(schema: z.ZodSchema<T>) {
         return NextResponse.json(
           {
             error: 'Validation error',
-            details: error.errors.map((e) => ({
+            details: error.issues.map((e) => ({
               path: e.path.join('.'),
               message: e.message,
             })),
@@ -128,13 +128,27 @@ export function validateInput<T>(schema: z.ZodSchema<T>) {
  * Common validation schemas
  */
 export const validationSchemas = {
-  partner: z.object({
-    name: z.string().min(1).max(255),
-    domain: z.string().max(255).optional().or(z.string().url().optional()),
-    rssUrl: z.string().url().optional(),
-    githubOrg: z.string().max(100).optional(),
-    notes: z.string().max(1000).optional(),
-  }),
+  partner: z.preprocess(
+    (data: any) => {
+      // Convert empty strings to undefined
+      if (typeof data === 'object' && data !== null) {
+        const cleaned: any = { ...data };
+        if (cleaned.domain === '') cleaned.domain = undefined;
+        if (cleaned.rssUrl === '') cleaned.rssUrl = undefined;
+        if (cleaned.githubOrg === '') cleaned.githubOrg = undefined;
+        if (cleaned.notes === '') cleaned.notes = undefined;
+        return cleaned;
+      }
+      return data;
+    },
+    z.object({
+      name: z.string().min(1).max(255),
+      domain: z.string().max(255).optional(),
+      rssUrl: z.string().url().optional(),
+      githubOrg: z.string().max(100).optional(),
+      notes: z.string().max(1000).optional(),
+    })
+  ),
 
   objective: z.object({
     type: z.enum(['integrations', 'co_sell', 'co_market', 'marketplace', 'geography', 'vertical']),
@@ -142,11 +156,22 @@ export const validationSchemas = {
     priority: z.number().int().min(1).max(3),
   }),
 
-  channel: z.object({
-    emailEnabled: z.boolean().optional(),
-    slackWebhookUrl: z.string().url().optional(),
-    cadence: z.enum(['daily', 'weekly']).optional(),
-  }),
+  channel: z.preprocess(
+    (data: any) => {
+      // Convert empty strings to undefined
+      if (typeof data === 'object' && data !== null) {
+        const cleaned: any = { ...data };
+        if (cleaned.slackWebhookUrl === '') cleaned.slackWebhookUrl = undefined;
+        return cleaned;
+      }
+      return data;
+    },
+    z.object({
+      emailEnabled: z.boolean().optional(),
+      slackWebhookUrl: z.string().url().optional(),
+      cadence: z.enum(['daily', 'weekly']).optional(),
+    })
+  ),
 
   feedback: z.object({
     type: z.enum(['thumbs_up', 'thumbs_down', 'na']),

@@ -5,9 +5,10 @@ import { Page } from '@playwright/test';
  * Note: This requires direct database access, which should be set up in test setup
  */
 export async function createTestUser(email: string, name: string = 'Test User') {
-  // Import db dynamically to avoid issues in test environment
+  // Import db and schema dynamically to avoid issues in test environment
   const { db } = await import('../../../lib/db');
-  const { users } = await import('../../../lib/schema');
+  // Import directly from drizzle schema to avoid re-export issues
+  const { users } = await import('../../../drizzle/schema');
   
   const [user] = await db.insert(users).values({
     email,

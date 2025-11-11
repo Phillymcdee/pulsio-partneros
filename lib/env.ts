@@ -20,6 +20,8 @@ const optionalEnvVars = [
   'INNGEST_SIGNING_KEY',
   'SLACK_SIGNING_SECRET',
   'AUTH_URL',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
 ] as const;
 
 interface EnvConfig {
@@ -36,6 +38,8 @@ interface EnvConfig {
   INNGEST_SIGNING_KEY?: string;
   SLACK_SIGNING_SECRET?: string;
   AUTH_URL?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }
 
 let validatedConfig: EnvConfig | null = null;
@@ -97,12 +101,15 @@ export function getEnvConfig(): EnvConfig {
 }
 
 // Validate on module load (only in production or when explicitly called)
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && typeof process.exit !== 'undefined') {
   try {
     validateEnv();
   } catch (error) {
     console.error('Environment validation failed:', error);
-    process.exit(1);
+    // Only exit in Node.js runtime, not Edge Runtime
+    if (typeof process.exit === 'function') {
+      process.exit(1);
+    }
   }
 }
 

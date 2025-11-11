@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createTestUser } from './helpers/auth';
 import { db } from '../../lib/db';
-import { partners, channels, users } from '../../lib/schema';
+import { partners, channels, users } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 test.describe('Channel Configuration', () => {

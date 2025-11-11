@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createTestUser } from './helpers/auth';
 import { db } from '../../lib/db';
-import { partners, objectives, users } from '../../lib/schema';
+import { partners, objectives, users } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 test.describe('Objectives Management', () => {

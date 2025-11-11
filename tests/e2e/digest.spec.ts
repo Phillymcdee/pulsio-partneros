@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createTestUser } from './helpers/auth';
 import { db } from '../../lib/db';
-import { partners, objectives, channels, signals, insights, users } from '../../lib/schema';
+import { partners, objectives, channels, signals, insights, users } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 test.describe('Digest Receipt and Interaction', () => {

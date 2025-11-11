@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 interface Insight {
@@ -32,6 +32,75 @@ interface Insight {
 
 type ViewMode = 'all' | 'hot' | 'action_queue';
 
+// Helper function to format score breakdown into user-friendly reasons
+function formatScoreBreakdown(breakdown: any, signalType: string, objectiveType?: string): {
+  reasons: string[];
+} {
+  const reasons: string[] = [];
+  
+  // Signal type importance
+  const signalTypeLabels: Record<string, string> = {
+    marketplace: 'Marketplace announcement',
+    launch: 'Product launch',
+    funding: 'Funding news',
+    changelog: 'Product update',
+    blog: 'Blog post',
+    pr: 'Press release',
+    hire: 'Hiring news',
+  };
+  
+  if (breakdown.baseScore >= 30) {
+    reasons.push(`High-value signal (${signalTypeLabels[signalType] || signalType})`);
+  } else if (breakdown.baseScore >= 20) {
+    reasons.push(`Moderate-value signal (${signalTypeLabels[signalType] || signalType})`);
+  }
+  
+  // Recency
+  if (breakdown.recencyMultiplier >= 0.9) {
+    reasons.push('Published recently (still fresh)');
+  } else if (breakdown.recencyMultiplier >= 0.7) {
+    reasons.push('Published within the last week');
+  } else if (breakdown.recencyMultiplier < 0.5) {
+    reasons.push('Published more than 2 weeks ago');
+  }
+  
+  // Priority
+  if (breakdown.priorityMultiplier >= 1.5) {
+    reasons.push('Matches your top priority objective');
+  } else if (breakdown.priorityMultiplier >= 1.2) {
+    reasons.push('Matches a high-priority objective');
+  }
+  
+  // Objective match
+  if (breakdown.objectiveMatchBonus >= 30) {
+    reasons.push('Perfect match with your objective');
+  } else if (breakdown.objectiveMatchBonus >= 15) {
+    reasons.push('Strong alignment with your objective');
+  }
+  
+  // LLM adjustment
+  if (breakdown.llmAdjustment > 10) {
+    reasons.push('AI analysis confirms strong relevance');
+  } else if (breakdown.llmAdjustment > 5) {
+    reasons.push('AI analysis shows good relevance');
+  } else if (breakdown.llmAdjustment < -10) {
+    reasons.push('AI analysis suggests limited relevance');
+  }
+  
+  return { reasons };
+}
+
+// Helper function to determine urgency from score
+function getUrgencyFromScore(score: number): { level: 'High' | 'Medium' | 'Low'; color: string } {
+  if (score >= 75) {
+    return { level: 'High', color: 'text-red-600' };
+  } else if (score >= 50) {
+    return { level: 'Medium', color: 'text-yellow-600' };
+  } else {
+    return { level: 'Low', color: 'text-gray-600' };
+  }
+}
+
 export default function DashboardPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,10 +112,97 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [selectedInsights, setSelectedInsights] = useState<Set<string>>(new Set());
   const [approveLoading, setApproveLoading] = useState(false);
+  const [fetchingSignals, setFetchingSignals] = useState(false);
+  const [hasTriggeredAutoFetch, setHasTriggeredAutoFetch] = useState(false);
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchInsights();
   }, [viewMode]);
+
+  // Auto-trigger backfill when dashboard loads with no insights
+  useEffect(() => {
+    if (!loading && insights.length === 0 && !hasTriggeredAutoFetch && !fetchingSignals) {
+      triggerBackfill();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, insights.length, hasTriggeredAutoFetch, fetchingSignals]);
+
+  // Stop fetching when insights appear
+  useEffect(() => {
+    if (insights.length > 0 && fetchingSignals && checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      setFetchingSignals(false);
+    }
+  }, [insights.length, fetchingSignals]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const triggerBackfill = async () => {
+    // Prevent multiple simultaneous backfill requests
+    if (fetchingSignals || hasTriggeredAutoFetch) {
+      return;
+    }
+    
+    setHasTriggeredAutoFetch(true);
+    setFetchingSignals(true);
+    try {
+      const response = await fetch('/api/backfill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: 7 }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // If Inngest isn't configured, show message and stop
+        if (!data.success && data.message) {
+          setFetchingSignals(false);
+          return;
+        }
+        // Wait a bit, then start polling for insights
+        setTimeout(() => {
+          let attempts = 0;
+          const maxAttempts = 12;
+          checkIntervalRef.current = setInterval(async () => {
+            attempts++;
+            await fetchInsights();
+            // Check if we have insights now by fetching fresh data
+            const checkResponse = await fetch('/api/insights');
+            if (checkResponse.ok) {
+              const data = await checkResponse.json();
+              if (data.length > 0 || attempts >= maxAttempts) {
+                if (checkIntervalRef.current) {
+                  clearInterval(checkIntervalRef.current);
+                  checkIntervalRef.current = null;
+                }
+                setFetchingSignals(false);
+                await fetchInsights(); // Final refresh
+              }
+            } else if (attempts >= maxAttempts) {
+              if (checkIntervalRef.current) {
+                clearInterval(checkIntervalRef.current);
+                checkIntervalRef.current = null;
+              }
+              setFetchingSignals(false);
+            }
+          }, 5000);
+        }, 2000);
+      } else {
+        setFetchingSignals(false);
+      }
+    } catch (error) {
+      console.error('Error triggering backfill:', error);
+      setFetchingSignals(false);
+    }
+  };
 
   const fetchInsights = async () => {
     try {
@@ -175,12 +331,21 @@ export default function DashboardPage() {
     return false;
   });
 
-  if (loading) {
+  if (loading || fetchingSignals) {
     return (
       <div className="min-h-screen p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Loading insights...</p>
+          <p className="text-gray-600">
+            {fetchingSignals 
+              ? "Gathering insights from your partners... This may take a minute." 
+              : "Loading insights..."}
+          </p>
+          {fetchingSignals && (
+            <p className="text-sm text-gray-500 mt-2">
+              Checking RSS feeds and generating insights
+            </p>
+          )}
         </div>
       </div>
     );
@@ -290,8 +455,37 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
           {filteredInsights.length === 0 ? (
-            <div className="bg-white rounded shadow p-8 text-center text-gray-500">
-              No insights yet. Add partners and objectives to get started.
+            <div className="bg-white rounded shadow p-8 text-center">
+              {fetchingSignals ? (
+                <>
+                  <div className="mb-4">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                  </div>
+                  <p className="text-gray-600 mb-2">
+                    Gathering insights from your partners...
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    This may take a minute while we check RSS feeds
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-2">
+                    No insights yet.
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {hasTriggeredAutoFetch 
+                      ? "We've started gathering insights. They'll appear here shortly."
+                      : "We'll automatically check your partner feeds for new insights."}
+                  </p>
+                  <button
+                    onClick={triggerBackfill}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Check for Updates
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             filteredInsights.map((insight) => (
@@ -356,14 +550,33 @@ export default function DashboardPage() {
 
                   {expandedId === insight.id && insight.scoreBreakdown && (
                     <div className="bg-blue-50 p-4 rounded mb-4">
-                      <h4 className="font-semibold mb-2">Score Breakdown:</h4>
-                      <div className="text-sm space-y-1">
-                        <div>Base Score: {insight.scoreBreakdown.baseScore?.toFixed(1)}</div>
-                        <div>Recency Multiplier: {insight.scoreBreakdown.recencyMultiplier?.toFixed(2)}x</div>
-                        <div>Priority Multiplier: {insight.scoreBreakdown.priorityMultiplier?.toFixed(2)}x</div>
-                        <div>Objective Match Bonus: +{insight.scoreBreakdown.objectiveMatchBonus || 0}</div>
-                        <div>LLM Adjustment: {insight.scoreBreakdown.llmAdjustment >= 0 ? '+' : ''}{insight.scoreBreakdown.llmAdjustment?.toFixed(1)}</div>
-                      </div>
+                      <h4 className="font-semibold mb-2 text-blue-900">Why this matters:</h4>
+                      {(() => {
+                        const { reasons } = formatScoreBreakdown(
+                          insight.scoreBreakdown,
+                          insight.signal.type,
+                          insight.objective?.type
+                        );
+                        const { level, color } = getUrgencyFromScore(insight.score);
+                        return (
+                          <>
+                            <ul className="list-disc list-inside text-sm space-y-1 mb-3 text-gray-700">
+                              {reasons.length > 0 ? (
+                                reasons.map((reason, idx) => (
+                                  <li key={idx}>{reason}</li>
+                                ))
+                              ) : (
+                                <li>This signal may be relevant to your objectives.</li>
+                              )}
+                            </ul>
+                            <div className="text-sm">
+                              <span className="font-medium">Urgency: </span>
+                              <span className={color}>{level}</span>
+                              <span className="text-gray-600"> (Score: {insight.score}/100)</span>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 

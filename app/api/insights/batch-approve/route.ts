@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, { maxRequests: 10, windowMs: 60000 });
-    if (!rateLimitResult.success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    const rateLimitFn = rateLimit({ maxRequests: 10, windowMs: 60000 });
+    const rateLimitResult = await rateLimitFn(request);
+    if (rateLimitResult) {
+      return rateLimitResult; // Rate limit exceeded
     }
 
     const body = await request.json();
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, updated: validIds.length });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 });
     }
-    logger.error('Error batch approving insights', { error });
+    logger.error('Error batch approving insights', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

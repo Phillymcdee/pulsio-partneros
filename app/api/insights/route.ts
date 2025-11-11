@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
     // Build query
-    let query = db
+    const baseQuery = db
       .select({
         insight: insights,
         signal: signals,
@@ -44,11 +44,9 @@ export async function GET(request: NextRequest) {
 
     // For hot signals, sort by recency first (most recent), then by score
     // Otherwise, sort by score descending
-    if (hotSignals) {
-      query = query.orderBy(desc(insights.createdAt), desc(insights.score));
-    } else {
-      query = query.orderBy(desc(insights.score));
-    }
+    const query = hotSignals
+      ? baseQuery.orderBy(desc(insights.createdAt), desc(insights.score))
+      : baseQuery.orderBy(desc(insights.score));
 
     const userInsights = await query.limit(50);
 
@@ -82,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formatted);
   } catch (error) {
-    logger.error('Error fetching insights', { error });
+    logger.error('Error fetching insights', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -50,9 +50,10 @@ export async function POST(request: NextRequest) {
     const { name, domain, rssUrl, githubOrg, notes } = validationResult.data;
 
     // Auto-detect RSS URL if domain provided but no RSS URL
-    let detectedRssUrl = rssUrl;
+    let detectedRssUrl: string | undefined = rssUrl;
     if (!detectedRssUrl && domain) {
-      detectedRssUrl = await detectRssUrl(domain);
+      const detected = await detectRssUrl(domain);
+      detectedRssUrl = detected || undefined;
     }
 
     const [partner] = await db
@@ -60,10 +61,10 @@ export async function POST(request: NextRequest) {
       .values({
         userId: user.id,
         name,
-        domain,
-        rssUrl: detectedRssUrl || null,
-        githubOrg: githubOrg || null,
-        notes: notes || null,
+        domain: domain || undefined,
+        rssUrl: detectedRssUrl || undefined,
+        githubOrg: githubOrg || undefined,
+        notes: notes || undefined,
       })
       .returning();
 
