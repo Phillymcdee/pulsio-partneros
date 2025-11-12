@@ -23,13 +23,17 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to error tracking service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to Sentry or other error tracking service
-      console.error('Error caught by boundary:', error, errorInfo);
-    } else {
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Log to error tracking service (if Sentry is configured)
+    // The captureException function will check if Sentry is initialized
+    import('@/lib/sentry').then(({ captureException }) => {
+      captureException(error, {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+      });
+    }).catch(() => {
+      // Sentry not available, ignore
+    });
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {

@@ -3,6 +3,23 @@ import type { objectives, signals } from '@/lib/schema';
 import { calculateBaseScore, finalScore, ScoreBreakdown } from './scoring';
 import { SignalType } from './classify';
 
+// Map objective types to human-readable labels
+const OBJECTIVE_TYPE_LABELS: Record<string, string> = {
+  integrations: 'Integrations',
+  co_sell: 'Co-Sell',
+  co_market: 'Co-Marketing',
+  marketplace: 'Marketplace',
+  geography: 'Geography',
+  vertical: 'Vertical',
+};
+
+/**
+ * Formats objective type enum value to human-readable label
+ */
+function formatObjectiveType(type: string): string {
+  return OBJECTIVE_TYPE_LABELS[type] || type;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -56,7 +73,11 @@ export async function generateInsight(
         {
           role: 'user',
           content: `Given:
-Objectives: ${JSON.stringify(objectives)}
+Objectives: ${JSON.stringify(objectives.map(obj => ({
+  type: formatObjectiveType(obj.type),
+  detail: obj.detail,
+  priority: obj.priority === 1 ? 'highest' : obj.priority === 2 ? 'medium' : 'low'
+})))}
 Signal: ${JSON.stringify({
   title: signal.title,
   type: signal.type,
@@ -65,13 +86,17 @@ Signal: ${JSON.stringify({
   facets: signal.facets,
 })}
 
+Analyze how this signal relates to the user's objectives and explain the connection clearly.
+
+IMPORTANT: When referencing objective types in your response, use the formatted names shown above (e.g., "Co-Marketing" not "co_market", "Co-Sell" not "co_sell").
+
 Return JSON with keys:
 {
-  "why": string (explain why this signal matters for the objectives),
-  "score": number (0-100, semantic relevance score),
+  "why": string (2-3 sentences explaining SPECIFICALLY why this signal matters for the objectives. Reference the objective type(s) using the formatted names (e.g., "Co-Marketing", "Co-Sell") and detail(s) if provided. For blog posts, explain what in the content makes it relevant. Be concrete and specific - don't use generic phrases. Example: "This blog post about [topic] aligns with your Co-Marketing objective because [specific reason]. The mention of [specific detail] suggests [specific opportunity]."),
+  "score": number (0-100, semantic relevance score based on how well the signal content matches the objectives),
   "recommendation": string (one sentence recommendation),
   "actions": [{"label": string, "ownerHint": string, "dueInDays": number}],
-  "outreachDraft": string (ready-to-send email draft, personalized with partner name)
+  "outreachDraft": string (ready-to-send email draft, personalized with partner name. Format: greeting, reference the signal title naturally within a sentence, suggest partnership opportunity, call to action, closing. Keep it concise and professional, 3-4 sentences max. Do not put the signal title on its own line - integrate it naturally into the sentence flow.)
 }`,
         },
       ],
@@ -107,14 +132,14 @@ Return JSON with keys:
           dueInDays: 7,
         },
       ],
-      outreachDraft: parsed.outreachDraft || generateDefaultOutreachDraft(signal),
+      outreachDraft: formatOutreachDraft(parsed.outreachDraft || generateDefaultOutreachDraft(signal)),
       breakdown: finalBreakdown,
     };
   } catch (error) {
     console.error('Error generating insight:', error);
     // Fallback to rule-based insight
     return {
-      why: `This ${signal.type} signal aligns with your ${primaryObjective.type} objective.`,
+      why: `This ${signal.type} signal aligns with your ${formatObjectiveType(primaryObjective.type)} objective.`,
       score: baseScore,
       recommendation: 'Consider reaching out to explore opportunities.',
       actions: [
@@ -124,7 +149,7 @@ Return JSON with keys:
           dueInDays: 7,
         },
       ],
-      outreachDraft: generateDefaultOutreachDraft(signal),
+      outreachDraft: formatOutreachDraft(generateDefaultOutreachDraft(signal)),
       breakdown,
     };
   }
@@ -133,10 +158,59 @@ Return JSON with keys:
 function generateDefaultOutreachDraft(signal: Signal): string {
   return `Hi there,
 
-I noticed ${signal.title} and thought it might be relevant to explore potential partnership opportunities.
+I noticed "${signal.title}" and thought it might be relevant to explore potential partnership opportunities.
 
 Would you be open to a quick conversation?
 
 Best regards`;
+}
+
+/**
+ * Formats outreach draft to ensure proper line breaks and flow
+ * Removes awkward line breaks and ensures signal titles are integrated naturally
+ */
+export function formatOutreachDraft(draft: string): string {
+  if (!draft) return draft;
+  
+  // First, fix common patterns where signal titles are on their own line
+  // Pattern: "I noticed\nTitle\nand thought" -> "I noticed Title and thought"
+  let formatted = draft
+    .replace(/(I noticed|I saw|I came across|I read about)\s*\n+([A-Z][^\n]+)\s*\n+(and thought|and|which)/gi, 
+      (match, prefix, title, suffix) => `${prefix} "${title}" ${suffix}`)
+    .replace(/(I noticed|I saw|I came across|I read about)\s*\n+([A-Z][^\n]+)\s*\n+/gi, 
+      (match, prefix, title) => `${prefix} "${title}" `);
+  
+  // Split into lines and process
+  const lines = formatted.split('\n');
+  const result: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const nextLine = i < lines.length - 1 ? lines[i + 1]?.trim() : '';
+    
+    // Skip empty lines at the start
+    if (result.length === 0 && !line) continue;
+    
+    // If current line ends mid-sentence (no punctuation) and next line looks like a continuation
+    // (starts with capital but isn't a greeting/closing), merge them
+    if (line && nextLine && 
+        !line.match(/[.!?:]$/) && 
+        nextLine.match(/^[A-Z]/) &&
+        !nextLine.match(/^(Hi|Hello|I|We|Would|Best|Thanks|Thank|Regards|Sincerely)/i) &&
+        line.length < 100) { // Don't merge if line is already very long
+      result.push(line + ' ' + nextLine);
+      i++; // Skip next line since we merged it
+      continue;
+    }
+    
+    result.push(line);
+  }
+  
+  // Join and clean up multiple consecutive newlines
+  return result
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+    .replace(/\s+$/gm, '') // Remove trailing whitespace from each line
+    .trim();
 }
 

@@ -10,8 +10,7 @@ import { processFeedback } from '@/lib/feedback';
  * Handle Slack interactive components (button clicks)
  * Slack sends POST requests with payload containing action data
  * 
- * Note: For MVP, we identify users by Slack team_id matching channels.
- * In production, you'd want to store slack_user_id mapping.
+ * Uses slack_team_id from channels table to map Slack team to PartnerOS user
  */
 export async function POST(request: NextRequest) {
   try {
@@ -52,15 +51,22 @@ export async function POST(request: NextRequest) {
       const teamId = payloadData.team?.id;
       const responseUrl = payloadData.response_url;
       
-      // Find user by team_id (match via channels table)
-      // For MVP: We'll find the first channel with this team's webhook pattern
-      // In production, store team_id in channels table
+      // Find user by team_id via channels table
       let userId: string | null = null;
       
       if (teamId) {
-        // Try to find user by team_id
-        // For now, we'll process without strict user verification
-        // TODO: Add team_id to channels table for proper mapping
+        const channelResult = await db
+          .select({ userId: channels.userId })
+          .from(channels)
+          .where(eq(channels.slackTeamId, teamId))
+          .limit(1);
+        
+        if (channelResult.length > 0) {
+          userId = channelResult[0].userId;
+        } else {
+          logger.warn('No channel found for Slack team_id', { teamId });
+          // Fallback: will try to find user via insight (for backward compatibility)
+        }
       }
       
       for (const action of actions) {
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
         
         if (actionId.startsWith('feedback_')) {
           const type = actionId.replace('feedback_', '');
-          await handleSlackFeedback(insightId, type, teamId, responseUrl);
+          await handleSlackFeedback(insightId, type, teamId, userId, responseUrl);
         } else if (actionId === 'copy_draft') {
           await handleSlackCopy(insightId, responseUrl);
         }
@@ -88,13 +94,13 @@ export async function POST(request: NextRequest) {
 
 /**
  * Handle feedback from Slack button
- * For MVP: Processes feedback without strict user verification
- * In production: Match Slack user to PartnerOS user via team_id
+ * Uses team_id to find user, with fallback to insight owner for backward compatibility
  */
 async function handleSlackFeedback(
   insightId: string,
   type: string,
   teamId: string | undefined,
+  userId: string | null,
   responseUrl: string
 ): Promise<void> {
   try {
@@ -108,31 +114,43 @@ async function handleSlackFeedback(
       return;
     }
 
-    // Get insight to find the user
-    const insightResult = await db
-      .select({
-        insight: insights,
-        signal: signals,
-        partner: partners,
-      })
-      .from(insights)
-      .innerJoin(signals, eq(insights.signalId, signals.id))
-      .innerJoin(partners, eq(signals.partnerId, partners.id))
-      .where(eq(insights.id, insightId))
-      .limit(1);
+    // Get insight to find the user (if not already found via team_id)
+    let targetUserId = userId;
+    
+    if (!targetUserId) {
+      const insightResult = await db
+        .select({
+          insight: insights,
+          signal: signals,
+          partner: partners,
+        })
+        .from(insights)
+        .innerJoin(signals, eq(insights.signalId, signals.id))
+        .innerJoin(partners, eq(signals.partnerId, partners.id))
+        .where(eq(insights.id, insightId))
+        .limit(1);
 
-    if (insightResult.length === 0) {
+      if (insightResult.length === 0) {
+        await sendSlackResponse(responseUrl, {
+          text: `Insight not found (ID: ${insightId}). Make sure you're using real insight IDs from your database.`,
+          replace_original: false,
+        });
+        return;
+      }
+
+      targetUserId = insightResult[0].partner.userId;
+    }
+    
+    if (!targetUserId) {
       await sendSlackResponse(responseUrl, {
-        text: `Insight not found (ID: ${insightId}). Make sure you're using real insight IDs from your database.`,
+        text: 'Unable to identify user. Please ensure your Slack integration is properly configured.',
         replace_original: false,
       });
       return;
     }
-
-    const userId = insightResult[0].partner.userId;
     
     // Process feedback (reuse shared logic)
-    await processFeedback(insightId, type, userId);
+    await processFeedback(insightId, type, targetUserId);
 
     // Send confirmation to Slack
     const emoji = type === 'thumbs_up' ? '👍' : type === 'thumbs_down' ? '👎' : '✓';

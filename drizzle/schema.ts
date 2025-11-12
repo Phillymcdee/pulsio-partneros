@@ -149,6 +149,7 @@ export const channels = pgTable('channels', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   emailEnabled: boolean('email_enabled').notNull().default(true),
   slackWebhookUrl: text('slack_webhook_url'),
+  slackTeamId: text('slack_team_id'), // Slack team ID for multi-user support
   cadence: cadenceEnum('cadence').notNull().default('weekly'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

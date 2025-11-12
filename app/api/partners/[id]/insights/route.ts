@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { insights, signals, partners } from '@/lib/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { formatOutreachDraft } from '@/lib/insights';
 
 export async function GET(
   request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
       why: item.insight.why,
       recommendation: item.insight.recommendation,
       actions: item.insight.actions,
-      outreachDraft: item.insight.outreachDraft,
+      outreachDraft: formatOutreachDraft(item.insight.outreachDraft),
       createdAt: item.insight.createdAt,
     }));
 

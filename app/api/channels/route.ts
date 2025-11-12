@@ -39,8 +39,22 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(userChannel[0]);
   } catch (error) {
-    logger.error('Error fetching channel', error as Error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error('Error fetching channel', error as Error, {
+      userId: user?.id,
+      errorMessage,
+      errorStack,
+    });
+    // Include more details in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        ...(isDevelopment && { details: errorMessage, stack: errorStack })
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -60,12 +74,13 @@ export async function PATCH(request: NextRequest) {
     if (validationResult instanceof NextResponse) {
       return validationResult;
     }
-    const { emailEnabled, slackWebhookUrl, cadence } = validationResult.data;
+    const { emailEnabled, slackWebhookUrl, slackTeamId, cadence } = validationResult.data;
     
     const updates: Partial<typeof channels.$inferInsert> = {};
     
     if (emailEnabled !== undefined) updates.emailEnabled = emailEnabled;
     if (slackWebhookUrl !== undefined) updates.slackWebhookUrl = slackWebhookUrl || null;
+    if (slackTeamId !== undefined) updates.slackTeamId = slackTeamId || null;
     if (cadence !== undefined) {
       updates.cadence = cadence;
     }
@@ -106,8 +121,22 @@ export async function PATCH(request: NextRequest) {
     logger.info('Channel updated', { userId: user.id });
     return NextResponse.json(updated);
   } catch (error) {
-    logger.error('Error updating channel', error as Error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error('Error updating channel', error as Error, {
+      userId: user?.id,
+      errorMessage,
+      errorStack,
+    });
+    // Include more details in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        ...(isDevelopment && { details: errorMessage, stack: errorStack })
+      },
+      { status: 500 }
+    );
   }
 }
 

@@ -4,6 +4,7 @@ import { insights, signals, partners, objectives } from '@/lib/schema';
 import { eq, and, desc, gte } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { formatOutreachDraft } from '@/lib/insights';
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       why: item.insight.why,
       recommendation: item.insight.recommendation,
       actions: item.insight.actions,
-      outreachDraft: item.insight.outreachDraft,
+      outreachDraft: formatOutreachDraft(item.insight.outreachDraft),
       feedback: item.insight.feedback,
       status: item.insight.status || 'pending',
       createdAt: item.insight.createdAt,

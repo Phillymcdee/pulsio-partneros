@@ -19,6 +19,7 @@ const optionalEnvVars = [
   'INNGEST_EVENT_KEY',
   'INNGEST_SIGNING_KEY',
   'SLACK_SIGNING_SECRET',
+  'SENTRY_DSN',
   'AUTH_URL',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
@@ -37,6 +38,7 @@ interface EnvConfig {
   INNGEST_EVENT_KEY?: string;
   INNGEST_SIGNING_KEY?: string;
   SLACK_SIGNING_SECRET?: string;
+  SENTRY_DSN?: string;
   AUTH_URL?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;

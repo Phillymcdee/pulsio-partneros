@@ -251,7 +251,9 @@ See `docs/implementation/USER_FLOWS.md` for detailed flow breakdowns.
 - **E2E tests: Implemented and ready to run** ✅
 - Performance monitoring needs to be implemented (Phase 2)
 - QA checkpoints should be executed before production deployment
-- Two code TODOs remain (Sentry integration, Slack team_id mapping)
+- ✅ **All code TODOs complete** (Sentry integration, Slack team_id mapping)
+
+**Note:** Run `npm run db:push` to apply the new `slack_team_id` column migration.
 
 ## 📅 Update History
 
@@ -319,16 +321,23 @@ See `docs/implementation/USER_FLOWS.md` for detailed flow breakdowns.
   - ✅ Updated README.md to reference GETTING_STARTED.md
   - ✅ All planning files now accurately reflect current implementation state
 
+- **2025-01-09 EST**: Code TODOs completed
+  - ✅ Sentry integration fully implemented with @sentry/nextjs package
+  - ✅ Created Sentry config files (client, server, edge) with proper DSN checking
+  - ✅ Updated ErrorBoundary to send errors to Sentry in production
+  - ✅ Updated lib/sentry.ts to use real Sentry SDK
+  - ✅ Added slack_team_id column to channels table schema
+  - ✅ Generated database migration (0002_greedy_bushwacker.sql)
+  - ✅ Updated Slack interactive route to use team_id for proper user mapping
+  - ✅ Updated channels API to support slackTeamId field
+  - ✅ Added SENTRY_DSN to environment variable configuration
+  - ✅ Updated GETTING_STARTED.md with Sentry setup instructions
+
 ## 🔧 Known Issues / TODOs
 
 ### Code TODOs
-- [ ] **ErrorBoundary.tsx (line 28)**: Send errors to Sentry or other error tracking service
-  - Currently just logs to console in production
-  - Sentry integration scaffolded but needs full SDK integration (`@sentry/nextjs` package)
-  
-- [ ] **Slack Interactive Route (line 63)**: Add `team_id` to channels table for proper Slack user mapping
-  - Currently uses workaround for MVP (finds user via partner relationship)
-  - Needed for proper multi-user Slack support
+- ✅ **ErrorBoundary.tsx**: Sentry integration complete - errors now sent to Sentry in production
+- ✅ **Slack Interactive Route**: Added `slack_team_id` to channels table for proper Slack user mapping
 
 ### Completed Items
 - ✅ Fix test imports (getRecencyMultiplier export) - **COMPLETE**

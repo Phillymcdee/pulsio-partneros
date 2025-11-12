@@ -162,6 +162,7 @@ export const validationSchemas = {
       if (typeof data === 'object' && data !== null) {
         const cleaned: any = { ...data };
         if (cleaned.slackWebhookUrl === '') cleaned.slackWebhookUrl = undefined;
+        if (cleaned.slackTeamId === '') cleaned.slackTeamId = undefined;
         return cleaned;
       }
       return data;
@@ -169,6 +170,7 @@ export const validationSchemas = {
     z.object({
       emailEnabled: z.boolean().optional(),
       slackWebhookUrl: z.string().url().optional(),
+      slackTeamId: z.string().max(255).optional(), // Slack team ID for multi-user support
       cadence: z.enum(['daily', 'weekly']).optional(),
     })
   ),

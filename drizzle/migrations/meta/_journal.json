@@ -15,6 +15,13 @@
       "when": 1762661496272,
       "tag": "0001_tiny_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762900128948,
+      "tag": "0002_greedy_bushwacker",
+      "breakpoints": true
     }
   ]
 }

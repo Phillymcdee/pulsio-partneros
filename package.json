@@ -33,6 +33,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "@paralleldrive/cuid2": "^3.0.4",
     "@playwright/test": "^1.56.1",
+    "@sentry/nextjs": "^10.25.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.0",

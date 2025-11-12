@@ -40,6 +40,7 @@ cp .env.example .env
 - `INNGEST_EVENT_KEY` - For scheduled jobs (RSS ingestion, digests)
 - `INNGEST_SIGNING_KEY` - Inngest signing key
 - `SLACK_SIGNING_SECRET` - For Slack interactive components
+- `SENTRY_DSN` - For error tracking (optional)
 
 See `.env.example` for all available options.
 

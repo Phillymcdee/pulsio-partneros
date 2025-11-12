@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { insights, signals, partners, objectives, channels } from '@/lib/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { formatOutreachDraft } from './insights';
 
 export interface DigestItem {
   partner: string;
@@ -49,7 +50,7 @@ export async function generateDigest(userId: string, limit: number = 10): Promis
     why: item.insight.why,
     recommendation: item.insight.recommendation,
     action: item.insight.actions[0]?.label || 'Reach out',
-    outreachDraft: item.insight.outreachDraft,
+    outreachDraft: formatOutreachDraft(item.insight.outreachDraft),
     insightId: item.insight.id,
   }));
 }

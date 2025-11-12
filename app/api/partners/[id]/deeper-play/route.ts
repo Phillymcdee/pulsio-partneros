@@ -77,14 +77,14 @@ ${idx + 1}. ${item.signal.title} (${item.signal.type})
 `).join('\n')}
 
 Generate a personalized outreach draft that:
-1. References recent signals/activities
+1. References recent signals/activities naturally within sentences (do not put signal titles on their own lines)
 2. Suggests a deeper partnership opportunity (e.g., marketplace integration, co-marketing campaign, joint product)
-3. Is warm but professional
+3. Is warm but professional, concise (3-4 sentences max)
 4. Includes a clear call to action
 
 Return JSON with:
 {
-  "outreachDraft": string (ready-to-send email draft),
+  "outreachDraft": string (ready-to-send email draft with proper formatting - greeting, body with integrated signal references, call to action, closing),
   "suggestedPlay": string (description of the deeper play opportunity)
 }`,
           },
@@ -102,15 +102,18 @@ Return JSON with:
 
       logger.info('Deeper play draft generated', { partnerId: id, userId: user.id });
 
+      const { formatOutreachDraft } = await import('@/lib/insights');
+      
       return NextResponse.json({
-        outreachDraft: parsed.outreachDraft || generateDefaultDeeperPlayDraft(partnerData.name),
+        outreachDraft: formatOutreachDraft(parsed.outreachDraft || generateDefaultDeeperPlayDraft(partnerData.name)),
         suggestedPlay: parsed.suggestedPlay || 'Explore deeper partnership opportunities',
       });
     } catch (error) {
       logger.error('Error generating deeper play draft', error instanceof Error ? error : new Error(String(error)), { partnerId: id });
       // Fallback to default draft
+      const { formatOutreachDraft } = await import('@/lib/insights');
       return NextResponse.json({
-        outreachDraft: generateDefaultDeeperPlayDraft(partnerData.name),
+        outreachDraft: formatOutreachDraft(generateDefaultDeeperPlayDraft(partnerData.name)),
         suggestedPlay: 'Explore deeper partnership opportunities',
       });
     }
